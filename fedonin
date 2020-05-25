@@ -1,0 +1,53 @@
+import numpy as np
+import cv2
+
+contour_area = []
+percent_of_area = []
+i = int(0)
+
+img = cv2.imread('/Users/alcherniaev/Downloads/OpenCV/IMG_4411.JPG')
+
+resized = cv2.resize(img, (807, 707), interpolation=cv2.INTER_AREA)
+gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+blur = cv2.GaussianBlur(gray, (3, 3), 0)
+_, th1 = cv2.threshold(blur, 160, 255, cv2.THRESH_TOZERO)
+
+thr = cv2.adaptiveThreshold(th1, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 3, 7)
+
+h, w = thr.shape[:2]
+mask = np.zeros((h + 2, w + 2), np.uint8)
+cv2.floodFill(thr, mask, (0, 0), 0)
+
+contours, _ = cv2.findContours(thr, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+for contour in contours:
+    if cv2.contourArea(contour) >= 10:
+        contour_area.append(cv2.contourArea(contour))
+
+contour_area.sort(reverse=True)
+contour_area = contour_area[:-1]
+total_area = sum(contour_area)
+average_area = total_area/len(contour_area)
+
+for area in contour_area:
+    percent_of_area.append(area/total_area * 100)
+    #print(contour_area[i], float('{:.3f}'.format(percent_of_area[i])), '%')
+    i += 1
+
+print('total area =', total_area)
+print('average area =', float('{:.1f}'.format(average_area)))
+print('number of contours =', len(contour_area))
+print()
+
+for i in range(5):
+    print(contour_area[i], float('{:.3f}'.format(percent_of_area[i])), '%')
+print()
+if percent_of_area[0] > 10:
+    print('poor quality of the distribution')
+else:
+    print('good quality of the distribution')
+cv2.drawContours(resized, contours, -1, (0, 0, 255), 1)
+
+cv2.imshow('img', resized)
+cv2.imshow('img2', thr)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
